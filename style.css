@@ -1,0 +1,63 @@
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background-color: #f4f4f4;
+    color: #333;
+}
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-align: center; /* Centrar contenido */
+}
+h1, h2 {
+    color: #0056b3;
+}
+button {
+    padding: 10px 20px;
+    margin: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    transition: background-color 0.3s ease; /* Suavizar el cambio de color */
+}
+button#btnOn {
+    background-color: #28a745; /* Verde */
+}
+button#btnOn:hover {
+    background-color: #218838; /* Verde más oscuro al pasar el mouse */
+}
+button#btnOff {
+    background-color: #dc3545; /* Rojo */
+}
+button#btnOff:hover {
+    background-color: #c82333; /* Rojo más oscuro al pasar el mouse */
+}
+
+#status {
+    margin-bottom: 15px;
+    font-weight: bold;
+    color: #555;
+}
+.light-current-status {
+    font-size: 1.5em; /* Tamaño más grande para el estado */
+    font-weight: bold;
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f0f0f0;
+}
+/* Clases para cambiar el color del texto de estado */
+.light-current-status .on {
+    color: #28a745; /* Verde */
+}
+.light-current-status .off {
+    color: #dc3545; /* Rojo */
+}

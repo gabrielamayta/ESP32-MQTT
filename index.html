@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Luz de Puerta - ETEC</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="paho-mqtt.min.js" type="text/javascript"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Sistema de Control de Luz de Puerta</h1>
+
+        <p id="status">Estado de conexión MQTT: Desconectado</p>
+
+        <h2>Control de la Luz</h2>
+        <button id="btnOn">Encender Luz</button>
+        <button id="btnOff">Apagar Luz</button>
+        <p class="light-current-status">Estado de la Luz: <span id="lightStateDisplay">Desconocido</span></p>
+
+        </div>
+
+    <script>
+        // Configuración MQTT
+        const host = "broker.hivemq.com";
+        const port = 8000; // Puerto de WebSockets para HiveMQ
+        const clientId = "web_client_" + parseInt(Math.random() * 1000); // ID de cliente único para la web
+        
+        // Tópicos MQTT - ¡Asegúrate de que coincidan con tu código de ESP32!
+        const topicControlLuz = "casa/puerta/luz/control"; // Tópico para enviar comandos al ESP32
+        const topicEstadoLuz = "casa/puerta/luz/estado";   // Tópico para recibir el estado del ESP32
+
+        // Crear una instancia del cliente MQTT
+        // CORRECCIÓN: Usar Paho.Client en lugar de Paho.MQTT.Client
+        const client = new Paho.Client(host, Number(port), clientId);
+
+        // Asignar funciones de callback
+        client.onConnectionLost = onConnectionLost;
+        client.onMessageArrived = onMessageArrived;
+
+        // Conectar al broker
+        function connectMQTT() {
+            document.getElementById('status').innerText = 'Estado de conexión MQTT: Conectando...';
+            client.connect({
+                onSuccess: onConnect,
+                onFailure: onFailure,
+                useSSL: false // Usar false si el puerto es 8000 (WebSockets sin cifrar)
+            });
+        }
+
+        // Callback cuando la conexión es exitosa
+        function onConnect() {
+            console.log("Conectado a MQTT Broker!");
+            document.getElementById('status').innerText = 'Estado de conexión MQTT: Conectado!';
+            // Suscribirse al tópico para recibir el estado actual de la luz
+            client.subscribe(topicEstadoLuz);
+            console.log("Suscrito a: " + topicEstadoLuz);
+            // Si el mensaje es retenido en el broker, recibiremos el último estado al suscribirnos.
+        }
+
+        // Callback cuando la conexión falla
+        function onFailure(responseObject) {
+            console.log("Fallo la conexión: " + responseObject.errorMessage);
+            document.getElementById('status').innerText = 'Estado de conexión MQTT: Fallo la conexión. Reintentando...';
+            setTimeout(connectMQTT, 3000); // Reintentar la conexión después de 3 segundos
+        }
+
+        // Callback cuando la conexión se pierde
+        function onConnectionLost(responseObject) {
+            if (responseObject.errorCode !== 0) {
+                console.log("Conexión perdida: " + responseObject.errorMessage);
+                document.getElementById('status').innerText = 'Estado de conexión MQTT: Desconectado. Reconectando...';
+                setTimeout(connectMQTT, 3000); // Reintentar la conexión
+            }
+        }
+
+        // Callback cuando llega un mensaje MQTT
+        function onMessageArrived(message) {
+            console.log("Mensaje recibido: " + message.payloadString + " en " + message.destinationName);
+
+            // Si el mensaje es del tópico de estado de la luz
+            if (message.destinationName === topicEstadoLuz) {
+                const lightState = message.payloadString;
+                const lightStateDisplay = document.getElementById('lightStateDisplay'); // Asumiendo este ID para mostrar el estado
+
+                if (lightState === "ENCENDIDA") {
+                    lightStateDisplay.innerText = 'ENCENDIDA';
+                    lightStateDisplay.className = 'on'; // Clase para estilo verde (definida en style.css)
+                } else if (lightState === "APAGADA") {
+                    lightStateDisplay.innerText = 'APAGADA';
+                    lightStateDisplay.className = 'off'; // Clase para estilo rojo (definida en style.css)
+                } else if (lightState === "Conectado") {
+                    // Mensaje inicial del ESP32, no es un estado de luz per se.
+                    // Puedes manejarlo si quieres un estado de "conectado" sin luz definida.
+                    console.log("ESP32 conectado, esperando estado de luz inicial.");
+                }
+            }
+        
+        }
+
+        // Funciones para publicar comandos de luz
+        function turnLightOn() {
+            // CORRECCIÓN: Usar Paho.Message en lugar de Paho.MQTT.Message
+            const message = new Paho.Message("ON");
+            message.destinationName = topicControlLuz;
+            client.send(message);
+            console.log("Publicado: ON en " + topicControlLuz);
+        }
+
+        function turnLightOff() {
+            // CORRECCIÓN: Usar Paho.Message en lugar de Paho.MQTT.Message
+            const message = new Paho.Message("OFF");
+            message.destinationName = topicControlLuz;
+            client.send(message);
+            console.log("Publicado: OFF en " + topicControlLuz);
+        }
+
+        // Asignar eventos a los botones
+        document.getElementById('btnOn').addEventListener('click', turnLightOn);
+        document.getElementById('btnOff').addEventListener('click', turnLightOff);
+
+        // Iniciar la conexión MQTT cuando la página carga
+        window.onload = connectMQTT;
+
+    </script>
+</body>
+</html>
